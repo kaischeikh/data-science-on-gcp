@@ -1,4 +1,5 @@
 from pathlib import Path
+import tempfile
 import logging
 import zipfile
 import shutil
@@ -8,16 +9,17 @@ SOURCE="https://storage.googleapis.com/data-science-on-gcp/edition2/raw"
 
 BASE_URL = f"${SOURCE}/On_Time_Reporting_Carrier_On_Time_Performance_1987_present"
 
-def urlopen(url):
-    from urllib.request import urlopen as impl
-    import ssl
-
-    ctx_no_secure = ssl.create_default_context()
-    ctx_no_secure.set_ciphers('HIGH:!DH:!aNULL')
-    ctx_no_secure.check_hostname = False
-    ctx_no_secure.verify_mode = ssl.CERT_NONE
-    return impl(url, context=ctx_no_secure)
-
+def ingest(year: int, month: int, bucket: str) -> None:
+    tmpdir = tempfile.mkdtemp(prefix='Flight_data')
+    try:
+        local_file = download(year, month, tmpdir)
+        gzipped_file = zip_to_file(local_file, tmpdir)
+        destination_blob_name = f"flights/raw/{year}{month}.csv"
+        upload_csv(gzipped_file, destination_blob_name=destination_blob_name, bucket_name=bucket)
+        bqload(gzipped_file)
+    finally:
+        logging.info(f"Deleting tmpdir {tmpdir}")
+        shutil.rmtree(tmpdir)
 
 def download(year: int, month: int, destdir: Path| str) -> Path:
     if year <0:
@@ -35,6 +37,16 @@ def download(year: int, month: int, destdir: Path| str) -> Path:
         fp.write(response.read())
             
     return 
+
+def urlopen(url):
+    from urllib.request import urlopen as impl
+    import ssl
+
+    ctx_no_secure = ssl.create_default_context()
+    ctx_no_secure.set_ciphers('HIGH:!DH:!aNULL')
+    ctx_no_secure.check_hostname = False
+    ctx_no_secure.verify_mode = ssl.CERT_NONE
+    return impl(url, context=ctx_no_secure)
     
 def zip_to_file(filename: Path, destdir: Path | str) -> Path:
     zip_file = zipfile.ZipFile(file=filename, mode="r")
@@ -66,3 +78,24 @@ def upload_csv(csvfiles: Path, destination_blob_name: str, bucket_name: str = "d
     logging.info(
         f"File {csvfiles} uploaded to {destination_blob_name}."
     )
+    
+def bqload():
+    logging.error("FUNCTION IS NOT DEFINED !")
+    ...
+    
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Parsing module to ingest flight data")
+    parser.add_argument("--bucket", default="ds-on-gcp")
+    parser.add_argument("--year", required=True)
+    parser.add_argument("--month", required=True)
+    
+    try:
+        args = parser.parse_args()
+        ingest(args.year, args.month, args.bucket)
+        logging.info(f"Data succesfully {args.year} {args.month}")
+        
+    except:
+        logging.error("Retry data unavailable")
+        
