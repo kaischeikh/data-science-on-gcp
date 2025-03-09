@@ -7,6 +7,9 @@ from google.cloud import bigquery, storage
 
 import datetime as dt
 
+logging.basicConfig(level=logging.DEBUG)
+
+
 SOURCE="https://storage.googleapis.com/data-science-on-gcp/edition2/raw"
 
 BASE_URL = f"${SOURCE}/On_Time_Reporting_Carrier_On_Time_Performance_1987_present"
@@ -23,22 +26,19 @@ def ingest(year: int, month: int, bucket: str) -> None:
         logging.info(f"Deleting tmpdir {tmpdir}")
         shutil.rmtree(tmpdir)
 
-def download(year: int, month: int, destdir: Path| str) -> Path:
-    if year <0:
-        raise ValueError(f"Year must be a positive interge, passed value {year= }")
-    if month < 0 & month > 12:
-        raise ValueError(f"Month= {month} is not admissible must be a value between [1, 12]")
+def download(year: str, month: str, destdir: Path| str) -> Path:
     destdir = Path(destdir)
-    
-    url = f"{BASE_URL}_{year}_{month}.zip"
+
+    url = f"{BASE_URL}_{year}_{month}.zip"    
     zipfile = destdir / f"{year}_{month:02d}.zip"
     
-    logging.info(zipfile)
+    logging.debug(zipfile)
     with open(zipfile, "wb") as fp:
         response = urlopen(url)
+        logging.debug(response.status)
         fp.write(response.read())
-            
-    return 
+    logging.debug("File loaded properly")        
+    return zipfile
 
 def urlopen(url):
     from urllib.request import urlopen as impl
@@ -122,7 +122,7 @@ def next_month(bucket_name: str) -> tuple[int, int]:
     last_date = dt.datetime(year=year, month=month)
     last_date = last_date + dt.timedelta(days=31)
     
-    return last_date.year, last_date.month 
+    return str(last_date.year), f"{last_date.month:.02d}" 
     
     
 if __name__ == "__main__":
@@ -140,9 +140,9 @@ if __name__ == "__main__":
             logging.info("Infering year and name")
             year, month = next_month(args.bucket)
             
-        logging.debug(f"Ingesting year={args.year} month={args.month}")
-        tableref, numrows =  ingest(args.year, args.month, args.bucket)
-        logging.info(f"Data succesfully {args.year} {args.month}: in {tableref} Rows {numrows} have been added")
+        logging.debug(f"Ingesting year={year} month={month}")
+        tableref, numrows =  ingest(year, month, args.ucket)
+        logging.info(f"Data succesfully {year} {month}: in {tableref} Rows {numrows} have been added")
         
     except:
         logging.error("Retry data unavailable")
