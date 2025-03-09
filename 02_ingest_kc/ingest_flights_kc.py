@@ -3,8 +3,7 @@ import tempfile
 import logging
 import zipfile
 import shutil
-from gcloud import storage
-from google.cloud import bigquery
+from google.cloud import bigquery, storage
 
 import datetime as dt
 
