@@ -131,11 +131,16 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Parsing module to ingest flight data")
     parser.add_argument("--bucket", default="ds-on-gcp")
-    parser.add_argument("--year", required=True)
-    parser.add_argument("--month", required=True)
+    parser.add_argument("--year", required=False, default=None)
+    parser.add_argument("--month", required=False, default=None)
     
     try:
         args = parser.parse_args()
+        year, month = args.year, args.month
+        if year is None or month is None:
+            logging.info("Infering year and name")
+            year, month = next_month(args.bucket)
+            
         logging.debug(f"Ingesting year={args.year} month={args.month}")
         tableref, numrows =  ingest(args.year, args.month, args.bucket)
         logging.info(f"Data succesfully {args.year} {args.month}: in {tableref} Rows {numrows} have been added")
