@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 SOURCE="https://storage.googleapis.com/data-science-on-gcp/edition2/raw"
 
-BASE_URL = f"${SOURCE}/On_Time_Reporting_Carrier_On_Time_Performance_1987_present"
+BASE_URL = f"{SOURCE}/On_Time_Reporting_Carrier_On_Time_Performance_1987_present"
 
 def ingest(year: int, month: int, bucket: str) -> None:
     tmpdir = tempfile.mkdtemp(prefix='Flight_data')
@@ -30,14 +30,12 @@ def download(year: str, month: str, destdir: Path| str) -> Path:
     destdir = Path(destdir)
 
     url = f"{BASE_URL}_{year}_{month}.zip"    
-    zipfile = destdir / f"{year}_{month:02d}.zip"
+    zipfile = destdir / f"{year}_{month}.zip"
     
     logging.debug(zipfile)
     with open(zipfile, "wb") as fp:
         response = urlopen(url)
-        logging.debug(response.status)
         fp.write(response.read())
-    logging.debug("File loaded properly")        
     return zipfile
 
 def urlopen(url):
@@ -141,9 +139,10 @@ if __name__ == "__main__":
             year, month = next_month(args.bucket)
             
         logging.debug(f"Ingesting year={year} month={month}")
-        tableref, numrows =  ingest(year, month, args.ucket)
+        tableref, numrows =  ingest(year, month, args.bucket)
         logging.info(f"Data succesfully {year} {month}: in {tableref} Rows {numrows} have been added")
         
-    except:
+    except Exception as e:
         logging.error("Retry data unavailable")
+        logging.error(e)
         

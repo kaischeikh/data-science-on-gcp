@@ -55,6 +55,8 @@ def download(year: str, month: str, destdir: str):
 
     filename = os.path.join(destdir, "{}{}.zip".format(year, month))
     with open(filename, "wb") as fp:
+        logging.info(f"{url}")
+        assert False
         response = urlopen(url)
         fp.write(response.read())
     logging.debug("{} saved".format(filename))
