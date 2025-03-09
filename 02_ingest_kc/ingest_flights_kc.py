@@ -10,7 +10,7 @@ import datetime as dt
 logging.basicConfig(level=logging.DEBUG)
 
 
-SOURCE="https://storage.googleapis.com/data-science-on-gcp/edition2/raw"
+SOURCE = "https://storage.googleapis.com/data-science-on-gcp/edition2/raw"
 
 BASE_URL = f"{SOURCE}/On_Time_Reporting_Carrier_On_Time_Performance_1987_present"
 
